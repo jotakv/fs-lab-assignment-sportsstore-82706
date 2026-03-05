@@ -7,6 +7,8 @@ using SportsStore.Controllers;
 using SportsStore.Models;
 using SportsStore.Models.ViewModels;
 using Xunit;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace SportsStore.Tests {
 
@@ -21,7 +23,7 @@ namespace SportsStore.Tests {
                 new Product {ProductID = 2, Name = "P2"}
             }).AsQueryable<Product>());
 
-            HomeController controller = new HomeController(mock.Object);
+            HomeController controller = new HomeController(mock.Object, NullLogger<HomeController>.Instance);
 
             // Act
             ProductsListViewModel result =
@@ -48,7 +50,7 @@ namespace SportsStore.Tests {
                 new Product {ProductID = 5, Name = "P5"}
             }).AsQueryable<Product>());
 
-            HomeController controller = new HomeController(mock.Object);
+            HomeController controller = new HomeController(mock.Object, NullLogger<HomeController>.Instance);
             controller.PageSize = 3;
 
             // Act
@@ -77,8 +79,7 @@ namespace SportsStore.Tests {
             }).AsQueryable<Product>());
 
             // Arrange
-            HomeController controller =
-                new HomeController(mock.Object) { PageSize = 3 };
+            HomeController controller = new HomeController(mock.Object, NullLogger<HomeController>.Instance) { PageSize = 3 };
 
             // Act
             ProductsListViewModel result =
@@ -108,7 +109,7 @@ namespace SportsStore.Tests {
             }).AsQueryable<Product>());
 
             // Arrange - create a controller and make the page size 3 items
-            HomeController controller = new HomeController(mock.Object);
+            HomeController controller = new HomeController(mock.Object, NullLogger<HomeController>.Instance);
             controller.PageSize = 3;
 
             // Action
@@ -134,7 +135,7 @@ namespace SportsStore.Tests {
                 new Product {ProductID = 5, Name = "P5", Category = "Cat3"}
             }).AsQueryable<Product>());
 
-            HomeController target = new HomeController(mock.Object);
+            HomeController target = new HomeController(mock.Object, NullLogger<HomeController>.Instance);
             target.PageSize = 3;
 
             Func<ViewResult, ProductsListViewModel?> GetModel = result

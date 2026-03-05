@@ -8,3 +8,7 @@
 TestResults/
 *.suo
 terminal-output.txt
+# Logs
+SportsStore/Logs/
+Logs/
+
