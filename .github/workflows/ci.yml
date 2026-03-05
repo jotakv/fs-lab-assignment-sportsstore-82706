@@ -17,16 +17,19 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.3"
+          dotnet-version: "9.0.x"
+
+      - name: Show .NET info
+        run: dotnet --info
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore ./SportsSln.sln
 
       - name: Build
-        run: dotnet build --no-restore -c Release
+        run: dotnet build ./SportsSln.sln --no-restore -c Release
 
       - name: Test
-        run: dotnet test --no-build -c Release --logger "trx;LogFileName=test_results.trx"
+        run: dotnet test ./SportsSln.sln --no-build -c Release --logger "trx;LogFileName=test_results.trx"
 
       - name: Upload test results
         if: always()
