@@ -5,9 +5,6 @@
 /.vs/SportsSln
 **/bin/
 **/obj/
-.vs/
 TestResults/
-*.user
 *.suo
-*.cache
-Logs/
+terminal-output.txt
