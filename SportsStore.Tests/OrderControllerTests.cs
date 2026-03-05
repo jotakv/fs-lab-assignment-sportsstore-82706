@@ -3,6 +3,8 @@ using Moq;
 using SportsStore.Controllers;
 using SportsStore.Models;
 using Xunit;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace SportsStore.Tests {
 
@@ -17,7 +19,7 @@ namespace SportsStore.Tests {
             // Arrange - create the order
             Order order = new Order();
             // Arrange - create an instance of the controller
-            OrderController target = new OrderController(mock.Object, cart);
+            OrderController target = new OrderController(mock.Object, cart, NullLogger<OrderController>.Instance);
 
             // Act
             ViewResult? result = target.Checkout(order) as ViewResult;
@@ -39,7 +41,7 @@ namespace SportsStore.Tests {
             Cart cart = new Cart();
             cart.AddItem(new Product(), 1);
             // Arrange - create an instance of the controller
-            OrderController target = new OrderController(mock.Object, cart);
+            OrderController target = new OrderController(mock.Object, cart, NullLogger<OrderController>.Instance);
             // Arrange - add an error to the model
             target.ModelState.AddModelError("error", "error");
 
@@ -62,7 +64,7 @@ namespace SportsStore.Tests {
             Cart cart = new Cart();
             cart.AddItem(new Product(), 1);
             // Arrange - create an instance of the controller
-            OrderController target = new OrderController(mock.Object, cart);
+            OrderController target = new OrderController(mock.Object, cart, NullLogger<OrderController>.Instance);
 
             // Act - try to checkout
             RedirectToPageResult? result =
