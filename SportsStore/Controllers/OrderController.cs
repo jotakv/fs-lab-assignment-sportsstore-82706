@@ -3,6 +3,8 @@ using SportsStore.Models;
 using System;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using SportsStore.Services.Payments;
 
 namespace SportsStore.Controllers
 {
@@ -11,12 +13,13 @@ namespace SportsStore.Controllers
         private IOrderRepository repository;
         private Cart cart;
         private readonly ILogger<OrderController> _logger;
-
-        public OrderController(IOrderRepository repoService, Cart cartService, ILogger<OrderController> logger)
+        private readonly IPaymentService _paymentService;
+        public OrderController(IOrderRepository repoService, Cart cartService, ILogger<OrderController> logger, IPaymentService paymentService)
         {
             repository = repoService;
             cart = cartService;
             _logger = logger;
+            _paymentService = paymentService;
         }
 
         public ViewResult Checkout()
@@ -54,7 +57,7 @@ namespace SportsStore.Controllers
                 {
                     order.Lines = cart.Lines.ToArray();
                     repository.SaveOrder(order);
-
+                    HttpContext.Session.SetString("PendingOrder", JsonSerializer.Serialize(order));
                     _logger.LogInformation(
                         "Order created. OrderId={OrderId} Total={Total} Items={Items}",
                         order.OrderID,
