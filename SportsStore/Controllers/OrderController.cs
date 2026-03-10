@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
@@ -28,10 +29,14 @@ namespace SportsStore.Controllers
 
         public ViewResult Checkout()
         {
+            var cartId = GetOrCreateCartId();
+            var productIds = cart.Lines.Select(l => l.Product.ProductID).ToArray();
             _logger.LogInformation(
-                "Checkout started. User={User} CartItems={ItemCount}",
+                "Checkout started. User={User} CartItems={ItemCount} CartId={CartId} ProductIds={ProductIds}",
                 User?.Identity?.Name ?? "anonymous",
-                cart.Lines.Count()
+                cart.Lines.Count(),
+                cartId,
+                productIds
             );
 
             return View(new Order());
@@ -40,16 +45,24 @@ namespace SportsStore.Controllers
         [HttpPost]
         public async Task<IActionResult> Checkout(Order order)
         {
+            var cartId = GetOrCreateCartId();
+            var productIds = cart.Lines.Select(l => l.Product.ProductID).ToArray();
             _logger.LogInformation(
-                "Checkout submitted. User={User} CartItems={ItemCount}",
+                "Checkout submitted. User={User} CartItems={ItemCount} CartId={CartId} ProductIds={ProductIds}",
                 User?.Identity?.Name ?? "anonymous",
-                cart.Lines.Count()
+                cart.Lines.Count(),
+                cartId,
+                productIds
             );
 
             if (cart.Lines.Count() == 0)
             {
                 ModelState.AddModelError("", "Sorry, your cart is empty!");
-                _logger.LogWarning("Checkout blocked: cart empty. User={User}", User?.Identity?.Name ?? "anonymous");
+                _logger.LogWarning(
+                    "Checkout blocked: cart empty. User={User} CartId={CartId}",
+                    User?.Identity?.Name ?? "anonymous",
+                    cartId
+                );
             }
 
             if (ModelState.IsValid)
@@ -67,12 +80,13 @@ namespace SportsStore.Controllers
                     ));
 
                     //  3) URLs de retorno
-                    var successUrl = Url.Action(
+                    var successBaseUrl = Url.Action(
                         action: "Success",
                         controller: "Payment",
-                        values: new { session_id = "{CHECKOUT_SESSION_ID}" },
+                        values: null,
                         protocol: Request.Scheme
                     )!;
+                    var successUrl = $"{successBaseUrl}?session_id={{CHECKOUT_SESSION_ID}}";
 
                     var cancelUrl = Url.Action(
                         action: "Cancel",
@@ -90,25 +104,50 @@ namespace SportsStore.Controllers
                         correlationId: HttpContext.TraceIdentifier
                     );
 
-                    _logger.LogInformation("Stripe session created. SessionId={SessionId} Url={Url}", session.Id, session.Url);
+                    _logger.LogInformation(
+                        "Stripe session created. SessionId={SessionId} Url={Url} CartId={CartId} ProductIds={ProductIds}",
+                        session.Id,
+                        session.Url,
+                        cartId,
+                        productIds
+                    );
 
                     // 5) Redirigir a Stripe
                     return Redirect(session.Url);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Checkout failed while creating Stripe session. User={User}", User?.Identity?.Name ?? "anonymous");
+                    _logger.LogError(
+                        ex,
+                        "Checkout failed while creating Stripe session. User={User} CartId={CartId}",
+                        User?.Identity?.Name ?? "anonymous",
+                        cartId
+                    );
                     return RedirectToAction("Failed", "Payment");
                 }
             }
 
             _logger.LogWarning(
-                "Checkout failed validation. User={User} Errors={ErrorCount}",
+                "Checkout failed validation. User={User} Errors={ErrorCount} CartId={CartId}",
                 User?.Identity?.Name ?? "anonymous",
-                ModelState.ErrorCount
+                ModelState.ErrorCount,
+                cartId
             );
 
             return View(order);
         }
+
+        private string GetOrCreateCartId()
+        {
+            var cartId = HttpContext.Session.GetString("CartId");
+            if (string.IsNullOrWhiteSpace(cartId))
+            {
+                cartId = Guid.NewGuid().ToString("N");
+                HttpContext.Session.SetString("CartId", cartId);
+            }
+
+            return cartId;
+        }
     }
 }
+

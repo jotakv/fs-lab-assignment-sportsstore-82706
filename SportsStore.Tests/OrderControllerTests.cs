@@ -54,7 +54,7 @@ namespace SportsStore.Tests
             var httpContext = new DefaultHttpContext();
             httpContext.Request.Scheme = "http";
 
-            //  Session configurada correctamente (ISessionFeature)
+            // ✅ Session configurada correctamente (ISessionFeature)
             var session = new TestSession();
             httpContext.Features.Set<ISessionFeature>(new SessionFeature { Session = session });
 
@@ -65,7 +65,7 @@ namespace SportsStore.Tests
                 RouteData = new RouteData()
             };
 
-            //  UrlHelper mock para que Url.Action(...) NO sea null y NO lance excepción
+            // ✅ UrlHelper mock para que Url.Action(...) NO sea null y NO lance excepción
             var urlHelperMock = new Mock<IUrlHelper>();
             urlHelperMock
                 .Setup(x => x.Action(It.IsAny<UrlActionContext>()))
