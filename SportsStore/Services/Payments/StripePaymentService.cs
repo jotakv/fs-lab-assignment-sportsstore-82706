@@ -8,17 +8,22 @@ namespace SportsStore.Services.Payments
     {
         private readonly SessionService _sessionService;
 
+        private readonly IConfiguration _config;
+
         public StripePaymentService(IConfiguration config)
         {
-            var secretKey = config["Stripe:SecretKey"];
+            EnsureApiKey();
+            _config = config;
+            _sessionService = new SessionService();
+        }
+
+        private void EnsureApiKey()
+        {
+            var secretKey = _config["Stripe:SecretKey"];
             if (string.IsNullOrWhiteSpace(secretKey))
-            {
-                // No explota en CI si nadie llama al servicio, pero sí da error claro si intentas pagar sin key
                 throw new InvalidOperationException("Stripe SecretKey is missing. Set it via user-secrets or environment variables.");
-            }
 
             StripeConfiguration.ApiKey = secretKey;
-            _sessionService = new SessionService();
         }
 
         public async Task<Session> CreateCheckoutSessionAsync(
@@ -28,6 +33,7 @@ namespace SportsStore.Services.Payments
             string? customerEmail,
             string correlationId)
         {
+            EnsureApiKey();
             var options = new SessionCreateOptions
             {
                 Mode = "payment",
