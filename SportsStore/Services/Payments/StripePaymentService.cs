@@ -12,7 +12,7 @@ namespace SportsStore.Services.Payments
 
         public StripePaymentService(IConfiguration config)
         {
-            EnsureApiKey();
+            
             _config = config;
             _sessionService = new SessionService();
         }
