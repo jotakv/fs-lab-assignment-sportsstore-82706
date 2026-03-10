@@ -67,6 +67,7 @@ namespace SportsStore.Controllers
 
                 // 3) Reconstruir líneas desde el carrito
                 order.Lines = _cart.Lines.ToArray();
+                var cartId = HttpContext.Session.GetString("CartId") ?? string.Empty;
 
                 // 4) Guardar confirmación de pago en Order (esto es parte del rubric)
                 order.StripeSessionId = session.Id;
@@ -89,8 +90,9 @@ namespace SportsStore.Controllers
                 foreach (var line in order.Lines)
                 {
                     _logger.LogInformation(
-                        "Order item. OrderId={OrderId} ProductId={ProductId} ProductName={ProductName} Qty={Qty} UnitPrice={UnitPrice}",
+                        "Order item confirmed. OrderId={OrderId} CartId={CartId} ProductId={ProductId} ProductName={ProductName} Qty={Qty} UnitPrice={UnitPrice}",
                         order.OrderID,
+                        cartId,
                         line.Product.ProductID,
                         line.Product.Name,
                         line.Quantity,
