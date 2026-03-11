@@ -26,7 +26,10 @@
         public IdentityUser AdminUser { get; set; } = new();
 
         public async Task OnGetAsync() {
-            AdminUser = await userManager.FindByNameAsync("Admin");
+            IdentityUser? user = await userManager.FindByNameAsync("Admin");
+            if (user != null) {
+                AdminUser = user;
+            }
         }
     }
 }

@@ -25,12 +25,19 @@ namespace SportsStore.Controllers {
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginModel loginModel) {
             if (ModelState.IsValid) {
-                IdentityUser user =
-                    await userManager.FindByNameAsync(loginModel.Name);
+                string? userName = loginModel.Name;
+                string? password = loginModel.Password;
+                if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password)) {
+                    ModelState.AddModelError("", "Invalid name or password");
+                    return View(loginModel);
+                }
+
+                IdentityUser? user =
+                    await userManager.FindByNameAsync(userName);
                 if (user != null) {
                     await signInManager.SignOutAsync();
                     if ((await signInManager.PasswordSignInAsync(user,
-                            loginModel.Password, false, false)).Succeeded) {
+                            password, false, false)).Succeeded) {
                         return Redirect(loginModel?.ReturnUrl ?? "/Admin");
                     }
                 }
