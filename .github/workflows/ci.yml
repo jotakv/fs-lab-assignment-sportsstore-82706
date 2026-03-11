@@ -1,56 +1,85 @@
-name: ci
+name: Test & Publish Coverage (xUnit + ReportGenerator)
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ]   # <-- si tu repo usa master, cambia a "master"
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main" ]   # <-- idem
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
+env:
+  DOTNET_VERSION: "9.0.x"  # <-- pon la versión que case con tus tests (net9 => 9.0.x)
+  TEST_PROJECT: "SportsStore.Tests/SportsStore.Tests.csproj"  # <-- ajusta a tu csproj real
+
 jobs:
-  build-test:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
-
-      - name: Show .NET info
-        run: dotnet --info
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
-        run: dotnet restore ./SportsSln.sln
+        run: dotnet restore
 
       - name: Build
-        run: dotnet build ./SportsSln.sln --no-restore -c Release
+        run: dotnet build --no-restore -c Release
 
-      - name: Test
-        run: dotnet test ./SportsSln.sln --no-build -c Release --logger "trx;LogFileName=test_results.trx"
+      - name: Test (xUnit) and collect coverage
+        run: >
+          dotnet test ${{ env.TEST_PROJECT }} -c Release --no-build
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results.trx"
 
-      - name: Upload test results
-        if: always()
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Generate HTML coverage report
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          reportgenerator \
+            -reports:"**/coverage.cobertura.xml" \
+            -targetdir:"coveragereport" \
+            -reporttypes:"Html"
+
+      - name: Upload coverage as build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: "**/TestResults/*.trx"
+          name: coverage-html
+          path: coveragereport
+
+      # IMPORTANTE: este es el artifact que deploy-pages busca
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'   # <-- cambia a master si aplica
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages   # <-- explícito
+          path: coveragereport
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'       # <-- cambia a master si aplica
+    needs: build-and-test
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
